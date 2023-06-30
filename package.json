@@ -8,12 +8,7 @@
     "url": "https://github.com/dangell7"
   },
   "license": "MIT",
-  "dependencies": {
-    "@transia/hooks-toolkit": "^1.0.1",
-    "c2wasm-cli": "^1.0.5",
-    "dotenv": "^16.3.1",
-    "xrpld-cli": "^1.0.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "ts-node": "^10.9.1",
