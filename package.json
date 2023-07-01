@@ -8,7 +8,10 @@
     "url": "https://github.com/dangell7"
   },
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@transia/hooks-toolkit": "^1.0.2",
+    "dotenv": "^16.3.1"
+  },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "ts-node": "^10.9.1",
