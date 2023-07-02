@@ -140,20 +140,6 @@ export async function submitSlipCarol(): Promise<void> {
     serverUrl
   )) as XrplIntegrationTestContext
 
-  const hook = createHookPayload(
-    0,
-    'gambit',
-    'gambit',
-    SetHookFlags.hsfOverride,
-    ['Payment']
-  )
-
-  await setHooksV3({
-    client: testContext.client,
-    seed: testContext.alice.seed,
-    hooks: [{ Hook: hook }],
-  } as SetHookParams)
-
   // INVOKE IN
   const aliceWallet = testContext.alice
   const carolWallet = testContext.carol
@@ -203,26 +189,12 @@ export async function settle(): Promise<void> {
     serverUrl
   )) as XrplIntegrationTestContext
 
-  const hook = createHookPayload(
-    0,
-    'gambit',
-    'gambit',
-    SetHookFlags.hsfOverride,
-    ['Payment', 'Invoke']
-  )
-
-  await setHooksV3({
-    client: testContext.client,
-    seed: testContext.alice.seed,
-    hooks: [{ Hook: hook }],
-  } as SetHookParams)
-
   // INVOKE IN
   const aliceWallet = testContext.alice
   const carolWallet = testContext.carol
 
   const param1 = new iHookParamEntry(
-    new iHookParamName('GZ'),
+    new iHookParamName('GBS'),
     new iHookParamValue(floatToLEXfl('2'), true)
   )
 
