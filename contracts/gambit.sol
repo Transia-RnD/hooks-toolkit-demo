@@ -272,11 +272,11 @@ contract GambitPrivateOwnerBet {
     {
         uint256 win = 0;
         uint256 newValue = 0;
-        if (position == 1) {
-            win = amount.mul(odd);
-        }
         if (position == 0) {
             win = amount.div(odd);
+        }
+        if (position == 1) {
+            win = amount.mul(odd);
         }
         newValue = coverUnsealedSlips(amount, win, position);
         slipId = addSlip(msg.sender, amount, win, newValue, position);

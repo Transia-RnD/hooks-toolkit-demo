@@ -2,7 +2,10 @@
   "name": "hooks-toolkit-demo",
   "version": "1.0.0",
   "description": "A demo repository for the hooks-toolkit.",
-  "scripts": {},
+  "scripts": {
+    "gambit": "c2wasm-cli contracts build && ts-node src/gambit.ts",
+    "sandbox": "g++ ./playground/sandbox.c -o ./playground/build/sandbox && ./playground/build/sandbox out"
+  },
   "author": {
     "name": "Denis Angell",
     "url": "https://github.com/dangell7"
