@@ -79,8 +79,8 @@ uint8_t index_buffer[65] = {};
 #define BET_S_P ((uint8_t[BET_PS]){0x47U, 0x42U, 0x5AU})
 
 // TX PARAMS
-#define SLIP_PS 2
-#define SLIP_S_P ((uint8_t[SLIP_PS]){0x47U, 0x53U})
+#define SLIP_PS 3
+#define SLIP_S_P ((uint8_t[SLIP_PS]){0x47U, 0x53U, 0x53U})
 
 
 uint8_t namespace[32] = {
@@ -106,7 +106,7 @@ int64_t hook(uint32_t reserved) {
     TRACEHEX(otx_acc);
 
     // CONSTRUCTOR
-    // HOOK PARAMS: GBC | GambitBet.encoded()
+    // HOOK PARAMS: GBC
     uint8_t gb_buf [BET_MS];
     int64_t gb_size = hook_param(
         gb_buf,
@@ -166,14 +166,31 @@ int64_t hook(uint32_t reserved) {
             slot(SBUF(b_model_buf), 5);
 
             int64_t slip_pos = (int64_t)b_model_buf[1];
-
             if (winning_pos != slip_pos) {
-                TRACESTR("gambit.c: Skipping wrong win position");
+                TRACESTR("gambit.c: Skipping Slip - wrong win position");
                 continue;
             }
+            
             int64_t executed = (int64_t)b_model_buf[25U + 1U];
             if (executed == 1) {
-                TRACESTR("gambit.c: Skipping executed win position");
+                TRACESTR("gambit.c: Skipping Slip - executed win position");
+                continue;
+            }
+
+            uint8_t to_seal[8];
+            to_seal[0] = b_model_buf[18];
+            to_seal[1] = b_model_buf[19];
+            to_seal[2] = b_model_buf[20];
+            to_seal[3] = b_model_buf[21];
+            to_seal[4] = b_model_buf[22];
+            to_seal[5] = b_model_buf[23];
+            to_seal[6] = b_model_buf[24];
+            to_seal[7] = b_model_buf[25];
+
+            int64_t to_seal_amt = INT64_FROM_BUF(to_seal);
+            if (to_seal != 0)
+            {
+                TRACESTR("gambit.c: Skipping Slip - not sealed.");
                 continue;
             }
 

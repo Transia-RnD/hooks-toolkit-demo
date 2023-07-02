@@ -105,7 +105,7 @@ export async function submitSlipBob(): Promise<void> {
   )
 
   const param1 = new iHookParamEntry(
-    new iHookParamName('GS'),
+    new iHookParamName('GSS'),
     new iHookParamValue(testModel.encode(), true)
   )
 
@@ -168,7 +168,7 @@ export async function submitSlipCarol(): Promise<void> {
   )
 
   const param1 = new iHookParamEntry(
-    new iHookParamName('GS'),
+    new iHookParamName('GSS'),
     new iHookParamValue(testModel.encode(), true)
   )
 
@@ -266,8 +266,10 @@ export async function report(): Promise<void> {
     hook.Hooks[0].Hook.HookHash as string
   )
   // const ihookParamEntries = new iHookParamEntries(hookDefinition.HookParameters)
-  // @ts-expect-error -- Accessing private property for testing
-  console.log(hookDefinition.HookParameters[0].HookParameter.HookParameterName)
+  // // @ts-expect-error -- Accessing private property for testing
+  // console.log(hookDefinition.HookParameters[0].HookParameter.HookParameterName)
+  // // @ts-expect-error -- Accessing private property for testing
+  // console.log(hookDefinition.HookParameters[0].HookParameter.HookParameterValue)
   console.log(
     decodeModel(
       // @ts-expect-error -- Accessing private property for testing
@@ -302,6 +304,9 @@ export async function report(): Promise<void> {
 }
 
 report()
+
+// console.log(floatToLEXfl('2'))
+
 // createBetAlice().then(() => {
 //   submitSlipBob()
 //   submitSlipCarol()
