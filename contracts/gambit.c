@@ -15,13 +15,6 @@
         buf[i] = key_value[12 + i]; \
     } \
 
-#define XFL_S 8
-#define XFL_FROM_BUF(buf_raw, buf_from, offset) \
-    uint8_t* buf = (uint8_t*)(buf_raw); \
-    for (int i = 0; GUARD(XFL_S), i < XFL_S; i++) { \
-        buf[i] = buf_from[offset + i]; \
-    } \
-
 uint8_t txn[283] =
 {
 /* size,upto */
@@ -59,6 +52,19 @@ uint8_t txn[283] =
 // GAMBIT SLIP MODEL
 #define BINARY_MODEL_SIZE 34
 uint8_t b_model[BINARY_MODEL_SIZE] = {};
+#define VALUE_S 8
+#define VALUE_FROM_BUF(buf_raw, buf_from, offset) \
+    uint8_t* v_buf = (uint8_t*)(buf_raw); \
+    for (int i = 0; GUARD(VALUE_S), i < VALUE_S; i++) { \
+        v_buf[i] = buf_from[offset + i]; \
+    } \
+
+#define WIN_S 8
+#define WIN_FROM_BUF(buf_raw, buf_from, offset) \
+    uint8_t* w_buf = (uint8_t*)(buf_raw); \
+    for (int i = 0; GUARD(WIN_S), i < WIN_S; i++) { \
+        w_buf[i] = buf_from[offset + i]; \
+    } \
 
 // FIELDS
 #define VALUE_OUT (b_model + 1U)
@@ -171,12 +177,12 @@ int64_t hook(uint32_t reserved) {
                 continue;
             }
 
-            uint8_t value_buf[XFL_S];
-            XFL_FROM_BUF(value_buf, b_model_buf, 1U);
+            uint8_t value_buf[VALUE_S];
+            VALUE_FROM_BUF(value_buf, b_model_buf, 1U);
             uint64_t value_drops = float_int(*((int64_t*)value_buf), 6, 1);
 
-            uint8_t win_buf[XFL_S];
-            XFL_FROM_BUF(win_buf, b_model_buf, 9U);
+            uint8_t win_buf[WIN_S];
+            WIN_FROM_BUF(win_buf, b_model_buf, 9U);
             uint64_t win_drops = float_int(*((int64_t*)win_buf), 6, 1);
 
             // DA: REWRITE
@@ -271,15 +277,15 @@ int64_t hook(uint32_t reserved) {
             }
             TRACESTR(SBUF("gambit.c: Not Emitted."));
         }
-        uint8_t new_gb_buf[BET_MS];
-        hook_param_set(
-            new_gb_buf,
-            BET_MS,
-            BET_C_P,
-            BET_PS
-            gb_buf,
-            BET_MS,
-        );
+        // uint8_t new_gb_buf[BET_MS];
+        // hook_param_set(
+        //     new_gb_buf,
+        //     BET_MS,
+        //     BET_C_P,
+        //     BET_PS
+        //     gb_buf,
+        //     BET_MS,
+        // );
         DONE("gambit.c: Settlement Successful.");
     }
 
