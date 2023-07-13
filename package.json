@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "A demo repository for the hooks-toolkit.",
   "scripts": {
+    "sandbox": "g++ ./playground/sandbox.c -o ./playground/build/sandbox && ./playground/build/sandbox out",
     "build:hooks": "c2wasm-cli contracts build",
     "mutualfund": "yarn run build:hooks && ts-node src/mutualfund.ts",
-    "daoproposal": "yarn run build:hooks && ts-node src/daoproposal.ts"
+    "daoproposal": "yarn run build:hooks && ts-node src/daoproposal.ts",
   },
   "author": {
     "name": "Denis Angell",
