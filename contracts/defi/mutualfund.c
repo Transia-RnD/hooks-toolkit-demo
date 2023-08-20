@@ -3,6 +3,19 @@
  */
 #include "hookapi.h"
 
+/*
+
+Trading Window?: YES - 18 hours
+Price Determination: 24 hours - Net Asset Value
+Risk Profile: HRHR
+
+*/
+
+#define NOPE(x)\
+{\
+    return rollback((x), sizeof(x), __LINE__);\
+}
+
 uint8_t txn[283] =
 {
 /* size,upto */
@@ -28,7 +41,7 @@ uint8_t txn[283] =
 
 // TX BUILDER
 #define HOOK_ACC (txn + 125U)
-#define OTX_ACC (txn + 147U)
+#define OTXN_ACC (txn + 147U)
 #define FLS_OUT (txn + 20U)
 #define LLS_OUT (txn + 26U)
 #define DTAG_OUT (txn + 14U)
@@ -36,19 +49,25 @@ uint8_t txn[283] =
 #define EMIT_OUT (txn + 167U)
 #define FEE_OUT (txn + 80U)
 
+// TXN PREPARE: Amount
+uint8_t currency[20] = {
+    0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,
+    0x00U,0x00U,0x4EU,0x41U,0x56U,0x00U,0x00U,0x00U,0x00U,0x00U
+};
+
 int64_t hook(uint32_t reserved) {
 
     TRACESTR("mutualfund.c: Called.");
     _g(1,1);
 
     // ACCOUNT: Origin Tx Account
-    otxn_field(OTX_ACC, SFS_ACCOUNT, sfAccount);
+    otxn_field(OTXN_ACC, SFS_ACCOUNT, sfAccount);
 
     // ACCOUNT: Hook Account
     hook_account(HOOK_ACC, SFS_ACCOUNT);
 
     // FILTER ON: ACCOUNT
-    if (BUFFER_EQUAL_20(HOOK_ACC, OTX_ACC))
+    if (BUFFER_EQUAL_20(HOOK_ACC, OTXN_ACC))
         DONE("mutualfund: outgoing tx on `Account`.");
 
     // Incoming Tx
@@ -73,14 +92,21 @@ int64_t hook(uint32_t reserved) {
     int64_t amount_token = float_int(amount_xfl, 0, 1);
     TRACEVAR(amount_token); // <- amount as token
 
-    // DA: TODO BUFFER COST BASIS
-    uint8_t cost_basis[SFS_AMOUNT_IOU];
+    // DA: IN TRADING WINDOW - FIREWALL
+    // DA: HAS RISK PROFILE
 
     // DA: TODO Calculate NAV
-    int64_t liabilities = 0;
-    int64_t assets = 10;
-    int64_t outstanding = 100;
-    int64_t nav = liabilities - assets / outstanding;
+    uint8_t nav_buffer[8];
+    if (state(SBUF(nav_buffer), HOOK_ACC, SFS_ACCOUNT) != SFS_ACCOUNT)
+    {
+        DONE("mutualfund: No current NAV");
+    }
+
+    int64_t nav_amount = float_int(nav_buffer, 0, 1);
+    int64_t share_amount = float_multiply(amount_token, nav_amount);
+
+    // DA: TODO STATE COST BASIS
+    uint8_t cost_basis[SFS_AMOUNT_IOU];
 
     // TXN: PREPARE: Init
     etxn_reserve(1);
@@ -93,15 +119,12 @@ int64_t hook(uint32_t reserved) {
     uint32_t lls = fls + 4 ;
     *((uint32_t*)(LLS_OUT)) = FLIP_ENDIAN(lls);
 
-    // TRACEHEX(amount_buffer);
-
-    // DA: TODO CHECK THAT USER HAS TL
-
-    // TXN PREPARE: Amount
-    uint8_t currency[20] = {
-        0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,0x00U,
-        0x00U,0x00U,0x4EU,0x41U,0x56U,0x00U,0x00U,0x00U,0x00U,0x00U
-    };
+    // KEYLET: TrustLine
+    uint8_t bal_kl[34];
+    if (util_keylet(SBUF(bal_kl), KEYLET_LINE, OTXN_ACC, SFS_ACCOUNT, (uint32_t)HOOK_ACC, SFS_ACCOUNT, currency, 20) != 34)
+    {
+        NOPE("xpop_iou_iou.c: Missing trustline");
+    }
     TRACEHEX(currency);
     float_sto(
         AMOUNT_OUT,
@@ -110,7 +133,7 @@ int64_t hook(uint32_t reserved) {
         20,
         HOOK_ACC,
         20,
-        amount_xfl,
+        share_amount,
         sfAmount
     );
 
@@ -147,8 +170,6 @@ int64_t hook(uint32_t reserved) {
     int64_t emit_result = emit(SBUF(emithash), SBUF(txn));
     if (emit_result > 0)
     {
-        // STATE: SET
-        // state_set(SBUF(cost_basis), OTX_ACC, 20);
         accept(SBUF("mutualfund: Successfully emitted"), __LINE__);
     }
     return rollback(SBUF("mutualfund: Emit unsuccessful"), __LINE__);

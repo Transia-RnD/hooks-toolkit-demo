@@ -5,7 +5,8 @@
   "scripts": {
     "sandbox": "g++ -lcurl ./playground/sandbox.c -o ./playground/build/sandbox && ./playground/build/sandbox out",
     "build:hooks": "c2wasm-cli contracts build",
-    "mutualfund": "yarn run build:hooks && ts-node src/mutualfund.ts",
+    "401k": "c2wasm-cli contracts/defi/401k.c build && ts-node src/401k.ts",
+    "mutualfund": "c2wasm-cli contracts/defi/mutualfund.c build && ts-node src/mutualfund.ts",
     "daoproposal": "yarn run build:hooks && ts-node src/daoproposal.ts"
   },
   "author": {
@@ -14,7 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@transia/hooks-toolkit": "^1.0.3",
+    "@transia/hooks-toolkit": "^1.0.4",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
