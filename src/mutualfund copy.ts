@@ -5,9 +5,6 @@ import {
   SetHookFlags,
   TransactionMetadata,
   xrpToDrops,
-  AccountSet,
-  AccountSetAsfFlags,
-  convertStringToHex,
 } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
 import { AccountID, Currency } from '@transia/ripple-binary-codec/dist/types'
@@ -21,14 +18,12 @@ import {
   iHookParamName,
   iHookParamValue,
   iHookParamEntry,
-  StateUtility,
 } from '@transia/hooks-toolkit'
 
 // NOT EXPORTED
 import {
   IC,
   XrplIntegrationTestContext,
-  accountSet,
   balance,
   close,
   limit,
@@ -45,19 +40,6 @@ export async function setHookAccount(): Promise<void> {
   const hookWallet = Wallet.fromSeed('sEd7b3Tpn4aMuHrdWeyhmAQJKXYBf5j')
   const signerWallet = Wallet.fromSeed('sne9DmyPVfwWLKQyADZqVeByonn5v')
   const publicKey = signerWallet.publicKey
-
-  // AccountSet
-  const accountSetTx: AccountSet = {
-    TransactionType: 'AccountSet',
-    Account: hookWallet.classicAddress,
-    TransferRate: 0,
-    Domain: convertStringToHex('https://usd.transia.io'),
-    SetFlag: AccountSetAsfFlags.asfGlobalFreeze,
-  }
-  await Xrpld.submit(testContext.client, {
-    wallet: hookWallet,
-    tx: accountSetTx,
-  })
 
   if ((await balance(testContext.client, signerWallet.classicAddress)) < 2000) {
     const payTx: Payment = {
@@ -108,7 +90,7 @@ export async function setHookAccount(): Promise<void> {
   const hook1 = createHookPayload(
     0,
     'nav',
-    'mutualfund',
+    'nav',
     SetHookFlags.hsfOverride,
     ['Invoke'],
     [param1.toXrpl()]
@@ -137,17 +119,15 @@ export async function buyNAVAlice(): Promise<void> {
     serverUrl
   )) as XrplIntegrationTestContext
 
-  const hookWallet = Wallet.fromSeed('sEd7b3Tpn4aMuHrdWeyhmAQJKXYBf5j')
+  const hookWallet = Wallet.fromSeed('sEd7QevWKtfC4nk2C6NxqyUU2pTViSc')
   const aliceWallet = testContext.alice
   const nav = IC.gw('NAV', hookWallet.classicAddress)
-  const limitValue = 100000
   if (
-    (await limit(testContext.client, aliceWallet.classicAddress, nav)) <
-    limitValue
+    (await limit(testContext.client, aliceWallet.classicAddress, nav)) < 100000
   ) {
     console.log('ADD NAV TRUSTLINE')
     const limitAmount1: IssuedCurrencyAmount = {
-      value: String(limitValue),
+      value: '100000',
       currency: nav.currency as string,
       issuer: nav.issuer as string,
     }
@@ -196,20 +176,40 @@ export async function report(): Promise<void> {
   const testContext = (await setupClient(
     serverUrl
   )) as XrplIntegrationTestContext
-  const hookWallet = Wallet.fromSeed('sEd7b3Tpn4aMuHrdWeyhmAQJKXYBf5j')
-
-  const hookState1 = await StateUtility.getHookStateDir(
+  const hookWallet = Wallet.fromSeed('sEd7QevWKtfC4nk2C6NxqyUU2pTViSc')
+  const nav = IC.gw('NAV', hookWallet.classicAddress)
+  const hookXRPBal = await balance(
+    testContext.client,
+    hookWallet.classicAddress
+  )
+  const hookUSDBal = await balance(
     testContext.client,
     hookWallet.classicAddress,
-    'mutualfund'
+    testContext.ic
   )
-  console.log(hookState1)
-
-  // console.log(`ALICE NAV: ${aliceNAVBal}`)
+  const aliceXRPBal = await balance(
+    testContext.client,
+    testContext.alice.classicAddress
+  )
+  const aliceUSDBal = await balance(
+    testContext.client,
+    testContext.alice.classicAddress,
+    testContext.ic
+  )
+  const aliceNAVBal = await balance(
+    testContext.client,
+    testContext.alice.classicAddress,
+    nav
+  )
+  console.log(`HOOK XRP: ${hookXRPBal}`)
+  console.log(`HOOK USD: ${hookUSDBal}`)
+  console.log(`ALICE XRP: ${aliceXRPBal}`)
+  console.log(`ALICE USD: ${aliceUSDBal}`)
+  console.log(`ALICE NAV: ${aliceNAVBal}`)
   await testContext.client.disconnect()
 }
 
-setHookAccount().then(() => {
-  report()
-  buyNAVAlice()
-})
+report()
+// setHookAccount().then(() => {
+//   // buyNAVAlice()
+// })

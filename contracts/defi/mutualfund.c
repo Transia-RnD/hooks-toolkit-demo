@@ -11,6 +11,15 @@ Risk Profile: HRHR
 
 */
 
+#define FLIP_ENDIAN_64(n) ((uint64_t) (((n & 0xFFULL) << 56ULL) | \
+                                        ((n & 0xFF00ULL) << 40ULL) | \
+                                        ((n & 0xFF0000ULL) << 24ULL) | \
+                                        ((n & 0xFF000000ULL) << 8ULL) | \
+                                        ((n & 0xFF00000000ULL) >> 8ULL) | \
+                                        ((n & 0xFF0000000000ULL) >> 24ULL) | \
+                                        ((n & 0xFF000000000000ULL) >> 40ULL) | \
+                                        ((n & 0xFF00000000000000ULL) >> 56ULL)))
+
 #define NOPE(x)\
 {\
     return rollback((x), sizeof(x), __LINE__);\
@@ -64,7 +73,7 @@ int64_t hook(uint32_t reserved) {
     otxn_field(OTXN_ACC, SFS_ACCOUNT, sfAccount);
 
     // ACCOUNT: Hook Account
-    hook_account(HOOK_ACC, SFS_ACCOUNT);
+    hook_account(HOOK_ACC, 20);
 
     // FILTER ON: ACCOUNT
     if (BUFFER_EQUAL_20(HOOK_ACC, OTXN_ACC))
@@ -89,6 +98,7 @@ int64_t hook(uint32_t reserved) {
     if (amount_xfl < 0)
         rollback(SBUF("mutualfund: Could not parse amount."), 1);
 
+    TRACEVAR(amount_xfl);
     int64_t amount_token = float_int(amount_xfl, 0, 1);
     TRACEVAR(amount_token); // <- amount as token
 
@@ -97,13 +107,20 @@ int64_t hook(uint32_t reserved) {
 
     // DA: TODO Calculate NAV
     uint8_t nav_buffer[8];
-    if (state(SBUF(nav_buffer), HOOK_ACC, SFS_ACCOUNT) != SFS_ACCOUNT)
+    if (state(SBUF(nav_buffer), HOOK_ACC, 20) != 8)
     {
         DONE("mutualfund: No current NAV");
     }
 
-    int64_t nav_amount = float_int(nav_buffer, 0, 1);
-    int64_t share_amount = float_multiply(amount_token, nav_amount);
+    TRACEHEX(nav_buffer);
+    TRACEVAR(FLIP_ENDIAN(nav_buffer));
+
+    uint64_t price_xfl = float_int(*((int64_t*)nav_buffer), 0, 1);
+    TRACEVAR(price_xfl); // <- value
+    int64_t price_xfl = FLIP_ENDIAN_64(1685216402777);
+    
+    int64_t token_total = float_multiply(amount_token, price_xfl);
+    TRACEVAR(token_total); // <- value
 
     // DA: TODO STATE COST BASIS
     uint8_t cost_basis[SFS_AMOUNT_IOU];
@@ -133,7 +150,7 @@ int64_t hook(uint32_t reserved) {
         20,
         HOOK_ACC,
         20,
-        share_amount,
+        token_total,
         sfAmount
     );
 

@@ -6,7 +6,7 @@
     "sandbox": "g++ -lcurl ./playground/sandbox.c -o ./playground/build/sandbox && ./playground/build/sandbox out",
     "build:hooks": "c2wasm-cli contracts build",
     "401k": "c2wasm-cli contracts/defi/401k.c build && ts-node src/401k.ts",
-    "mutualfund": "c2wasm-cli contracts/defi/mutualfund.c build && ts-node src/mutualfund.ts",
+    "mutualfund": "c2wasm-cli contracts/defi/tools/nav.c build && c2wasm-cli contracts/defi/mutualfund.c build && ts-node src/mutualfund.ts",
     "daoproposal": "yarn run build:hooks && ts-node src/daoproposal.ts"
   },
   "author": {
