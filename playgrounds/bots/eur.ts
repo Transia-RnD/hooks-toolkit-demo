@@ -1,13 +1,13 @@
-import { Wallet, xrpToDrops } from '@transia/xrpl'
+import { Client, Wallet, xrpToDrops } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
 
 // NOT EXPORTED
-import {
-  IC,
-  XrplIntegrationTestContext,
-  serverUrl,
-  setupClient,
-} from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
+import { IC } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
+// import {
+//   IC,
+//   XrplIntegrationTestContext,
+//   setupClient,
+// } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
 
 import { buy, init, sell, walkPrice } from './utils'
 
@@ -26,9 +26,9 @@ const startPrice = (Math.random() * (high - low) + low).toFixed(2)
 const startVolume = (Math.random() * (max - min) + min).toFixed(2)
 
 export async function run(): Promise<void> {
-  const testContext = (await setupClient(
-    serverUrl
-  )) as XrplIntegrationTestContext
+  const client = new Client('wss://hooks-testnet-v3.xrpl-labs.com')
+  await client.connect()
+  client.networkID = await client.getNetworkID()
 
   const icWallet = Wallet.fromSeed(seed)
   const oneWallet = Wallet.fromSeed('snQo9w7ZjdiYfS3tUUXab73VTuqwT')
@@ -66,7 +66,7 @@ export async function run(): Promise<void> {
     const takerGets: string = xrpToDrops(
       String(parseInt(String(parseFloat(price) * (ic.value as number))))
     )
-    await buy(testContext.client, wallet, takerGets, takerPays)
+    await buy(client, wallet, takerGets, takerPays)
   } else {
     console.log(`SELLING with wallet: ${wallet.classicAddress}`)
     ic.set(parseFloat(volume))
@@ -78,10 +78,10 @@ export async function run(): Promise<void> {
     const takerPays: string = xrpToDrops(
       String(parseInt(String(parseFloat(price) * (ic.value as number))))
     )
-    await sell(testContext.client, wallet, takerGets, takerPays)
+    await sell(client, wallet, takerGets, takerPays)
   }
 
-  await testContext.client.disconnect()
+  await client.disconnect()
 }
 
 init(seed, currency)

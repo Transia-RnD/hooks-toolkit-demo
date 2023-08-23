@@ -17,7 +17,6 @@ import {
   XrplIntegrationTestContext,
   accountSet,
   fund,
-  serverUrl,
   setupClient,
 } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
 
@@ -30,18 +29,19 @@ export function walkPrice(pv: number, hc: number, lc: number) {
 }
 
 async function fundICWallet(
-  testContext: XrplIntegrationTestContext,
+  client: Client,
+  mwallet: Wallet,
   wallet: Wallet,
   ic: IC
 ) {
   const payTx: Payment = {
     TransactionType: 'Payment',
-    Account: testContext.master.classicAddress,
+    Account: mwallet.classicAddress,
     Destination: wallet.classicAddress,
-    Amount: xrpToDrops(2000000),
+    Amount: xrpToDrops(2000),
   }
-  await Xrpld.submit(testContext.client, {
-    wallet: testContext.master,
+  await Xrpld.submit(client, {
+    wallet: mwallet,
     tx: payTx,
   })
   const amount: IssuedCurrencyAmount = {
@@ -54,7 +54,7 @@ async function fundICWallet(
     Account: wallet.classicAddress,
     LimitAmount: amount,
   }
-  await Xrpld.submit(testContext.client, {
+  await Xrpld.submit(client, {
     wallet: wallet,
     tx: trustTx,
   })
@@ -97,10 +97,13 @@ export async function buy(
 }
 
 export async function init(seed: string, currency: string) {
-  const testContext = (await setupClient(
-    serverUrl
-  )) as XrplIntegrationTestContext
+  const client = new Client('wss://hooks-testnet-v3.xrpl-labs.com')
+  await client.connect()
+  client.networkID = await client.getNetworkID()
 
+  const masterWallet = await client.fundWallet(null, {
+    faucetHost: 'hooks-testnet-v3.xrpl-labs.com',
+  })
   const gwWallet = Wallet.fromSeed(seed)
   const oneWallet = Wallet.fromSeed('snQo9w7ZjdiYfS3tUUXab73VTuqwT')
   const twoWallet = Wallet.fromSeed('shJgpGURyv2vVEHNCqMq7ujbR7Sku')
@@ -108,21 +111,21 @@ export async function init(seed: string, currency: string) {
 
   const ic = IC.gw(currency, gwWallet.classicAddress)
   await fund(
-    testContext.client,
-    testContext.master,
-    new ICXRP(10000),
+    client,
+    masterWallet.wallet,
+    new ICXRP(3000),
     ...[gwWallet.classicAddress]
   )
-  await accountSet(testContext.client, gwWallet)
+  await accountSet(client, gwWallet)
 
   // FUND BUYER WALLET
-  await fundICWallet(testContext, oneWallet, ic)
+  await fundICWallet(client, masterWallet.wallet, oneWallet, ic)
 
   // FUND SELLER WALLET
-  await fundICWallet(testContext, twoWallet, ic)
+  await fundICWallet(client, masterWallet.wallet, twoWallet, ic)
 
   // FUND 3RD PARTY WALLET
   // await fundICWallet(testContext, carolWallet, ic)
 
-  await testContext.client.disconnect()
+  await client.disconnect()
 }

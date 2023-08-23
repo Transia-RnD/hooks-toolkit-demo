@@ -9,16 +9,14 @@ import {
 } from '@transia/hooks-toolkit/dist/npm/src/libs/binary-models'
 
 export class ProposalModel extends BaseModel {
-  expiration: UInt64
-  required: UInt8
-  orderType: UInt8
-  value: XFL
-  currency: Currency
-  issuer: XRPAddress
+  expiration: UInt64 // Ledger Sequence
+  orderType: UInt8 // 0 BUY 1 SELL
+  value: XFL // Amount as XFL
+  currency: Currency // Currency
+  issuer: XRPAddress // Issuer
 
   constructor(
     expiration: UInt64,
-    required: UInt8,
     orderType: UInt8,
     value: XFL,
     currency: Currency,
@@ -26,7 +24,6 @@ export class ProposalModel extends BaseModel {
   ) {
     super()
     this.expiration = expiration
-    this.required = required
     this.orderType = orderType
     this.value = value
     this.currency = currency
@@ -36,7 +33,6 @@ export class ProposalModel extends BaseModel {
   getMetadata(): Metadata {
     return [
       { field: 'expiration', type: 'uint64' },
-      { field: 'required', type: 'uint8' },
       { field: 'orderType', type: 'uint8' },
       { field: 'value', type: 'xfl' },
       { field: 'currency', type: 'currency' },
@@ -47,7 +43,6 @@ export class ProposalModel extends BaseModel {
   toJSON() {
     return {
       expiration: this.expiration,
-      required: this.required,
       orderType: this.orderType,
       value: this.value,
       currency: this.currency,
