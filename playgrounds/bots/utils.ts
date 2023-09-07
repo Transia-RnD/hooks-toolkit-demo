@@ -5,6 +5,7 @@ import {
   TrustSet,
   xrpToDrops,
   OfferCreate,
+  AccountSetAsfFlags,
 } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
 
@@ -116,7 +117,7 @@ export async function init(seed: string, currency: string) {
     new ICXRP(3000),
     ...[gwWallet.classicAddress]
   )
-  await accountSet(client, gwWallet)
+  await accountSet(client, gwWallet, AccountSetAsfFlags.asfDefaultRipple)
 
   // FUND BUYER WALLET
   await fundICWallet(client, masterWallet.wallet, oneWallet, ic)

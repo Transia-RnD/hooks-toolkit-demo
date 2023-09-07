@@ -2,10 +2,18 @@ import { Client, Wallet, xrpToDrops } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
 
 // NOT EXPORTED
-import { IC } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
+import {
+  IC,
+  ICXRP,
+  balance,
+  fund,
+} from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
+import { MASTER_WALLET } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers/constants'
 
 import { buy, init, sell, walkPrice } from './utils'
 
+// const XRPL_WSS_ENDPOINT = 'wss://hooks-testnet-v3.xrpl-labs.com'
+const XRPL_WSS_ENDPOINT = 'ws://localhost:6006'
 const seed = 'ssYVAeLFaNunVFw3S3AQpFWUiTqdr'
 const currency = 'GBP'
 const high = 1
@@ -21,13 +29,37 @@ const startPrice = (Math.random() * (high - low) + low).toFixed(2)
 const startVolume = (Math.random() * (max - min) + min).toFixed(2)
 
 export async function run(): Promise<void> {
-  const client = new Client('wss://hooks-testnet-v3.xrpl-labs.com')
+  const client = new Client(XRPL_WSS_ENDPOINT)
   await client.connect()
   client.networkID = await client.getNetworkID()
 
   const icWallet = Wallet.fromSeed(seed)
+  if ((await balance(client, icWallet.classicAddress)) < 5000) {
+    await fund(
+      client,
+      MASTER_WALLET,
+      new ICXRP(10000),
+      ...[icWallet.classicAddress]
+    )
+  }
   const oneWallet = Wallet.fromSeed('snQo9w7ZjdiYfS3tUUXab73VTuqwT')
+  if ((await balance(client, oneWallet.classicAddress)) < 5000) {
+    await fund(
+      client,
+      MASTER_WALLET,
+      new ICXRP(10000),
+      ...[oneWallet.classicAddress]
+    )
+  }
   const twoWallet = Wallet.fromSeed('shJgpGURyv2vVEHNCqMq7ujbR7Sku')
+  if ((await balance(client, twoWallet.classicAddress)) < 5000) {
+    await fund(
+      client,
+      MASTER_WALLET,
+      new ICXRP(10000),
+      ...[twoWallet.classicAddress]
+    )
+  }
 
   const ic = IC.gw(currency, icWallet.classicAddress)
 

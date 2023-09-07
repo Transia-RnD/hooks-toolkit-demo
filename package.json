@@ -1,13 +1,10 @@
 {
   "name": "hooks-toolkit-demo",
-  "version": "1.0.0",
+  "version": "0.9.9",
   "description": "A demo repository for the hooks-toolkit.",
   "scripts": {
-    "sandbox": "g++ -lcurl ./playground/sandbox.c -o ./playground/build/sandbox && ./playground/build/sandbox out",
     "build:hooks": "c2wasm-cli contracts build",
-    "401k": "c2wasm-cli contracts/defi/401k.c build && ts-node src/401k.ts",
-    "mutualfund": "c2wasm-cli contracts/defi/tools/nav.c build && c2wasm-cli contracts/defi/mutualfund.c build && ts-node src/mutualfund.ts",
-    "daoproposal": "yarn run build:hooks && ts-node src/daoproposal.ts"
+    "dev": "c2wasm-cli contracts build && ts-node src/index.ts"
   },
   "author": {
     "name": "Denis Angell",
@@ -15,7 +12,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@transia/hooks-toolkit": "^1.0.4",
+    "@transia/hooks-toolkit": "^1.0.5",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
