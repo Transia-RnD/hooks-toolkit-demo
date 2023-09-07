@@ -96,6 +96,10 @@ uint8_t txn[283] =
 #define EMIT_OUT (txn + 167U)
 #define FEE_OUT (txn + 80U)
 
+// BUY TX BUILDER
+// #define BUY_SRC_ACC (txn + 125U)
+// #define BUY_DEST_ACC (txn + 147U)
+
 // TXN PREPARE: Currency - NAV
 uint8_t curr_nav[20] = {
     0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
@@ -105,7 +109,7 @@ uint8_t curr_nav[20] = {
 #define MAX_INVESTMENT 6073352297695428608 // 25 %
 #define REDEM_FEE 6021809102166982656      // 0.5 %
 #define REDEM_PERIOD 4                     // 4 days
-#define LID 6163084290242838528            // 21600 ((60*60*24) / 4 "ledger close seconds")
+#define LID 21600                          // 21600 ((60*60*24) / 4 "ledger close seconds")
 #define CLOSED_OFFERING 1                  // open or closed (cannot purchase after close)
 #define START_LEDGER 10                    // ledger index
 #define OFFERING_PERIOD 4                  // 4 days
@@ -168,6 +172,14 @@ int64_t hook(uint32_t reserved)
     // DA: TODO: IN TRADING WINDOW - FIREWALL
     // DA: TODO: HAS RISK PROFILE
 
+    int64_t ll_seq = ledger_seq();
+    int64_t nfo_ll = START_LEDGER + LID;
+    int64_t nfo_ended = ll_seq > nfo_ll;
+    if (ll_seq < START_LEDGER)
+    {
+        NOPE("nfo.c: NFO has not started.");
+    }
+
     // STATE: Nav
     uint8_t nav_buffer[8];
     if (state(SBUF(nav_buffer), HOOK_ACC, 20) != 8)
@@ -188,14 +200,6 @@ int64_t hook(uint32_t reserved)
     uint32_t lls = fls + 4;
     *((uint32_t *)(LLS_OUT)) = FLIP_ENDIAN(lls);
 
-    int64_t ll_seq = ledger_seq();
-    int64_t nfo_ll = float_sum(ll_seq, LID);
-    int64_t nfo_ended = ll_seq > nfo_ll;
-    if (ll_seq < START_LEDGER)
-    {
-        NOPE("nfo.c: NFO has not started.");
-    }
-
     switch (mode)
     {
     case 0:
@@ -209,41 +213,33 @@ int64_t hook(uint32_t reserved)
         uint8_t bbal_kl[34];
         if (util_keylet(SBUF(bbal_kl), KEYLET_LINE, OTXN_ACC, SFS_ACCOUNT, (uint32_t)HOOK_ACC, SFS_ACCOUNT, curr_nav, 20) != 34)
         {
-            NOPE("nfo.c: Missing trustline.");
+            NOPE("nfo.c: Missing NAV trustline on destination account.");
         }
 
         // SLOT SET: Slot 1
-        if (slot_set(SBUF(bbal_kl), 1) != 20)
+        if (slot_set(SBUF(bbal_kl), 1) != 1)
             accept(SBUF("nfo.c: Could not load target balance 1."), __LINE__);
 
-        // SLOT SUBFIELD: sfBalance
-        if (slot_subfield(1, sfBalance, 1) != 20)
-            accept(SBUF("nfo.c: Could not load target balance 1.2."), __LINE__);
+        // // SLOT SUBFIELD: sfBalance
+        // if (slot_subfield(1, sfBalance, 1) != 1)
+        //     accept(SBUF("nfo.c: Could not load target balance 1.2."), __LINE__);
 
-        int64_t balance = slot_float(1); // <- amount as token
-        int64_t final_bal = float_sum(balance, amount_xfl);
+        // int64_t balance = slot_float(1); // <- amount as token
+        // int64_t final_bal = float_sum(balance, amount_xfl);
 
-        // KEYLET: TrustLine - Hook NAV
-        uint8_t hbal_kl[34];
-        if (util_keylet(SBUF(hbal_kl), KEYLET_LINE, HOOK_ACC, SFS_ACCOUNT, (uint32_t)HOOK_ACC, SFS_ACCOUNT, curr_nav, 20) != 34)
-        {
-            NOPE("nfo.c: Missing trustline.");
-        }
-        // SLOT SET: Slot 2
-        if (slot_set(SBUF(hbal_kl), 2) != 20)
-            accept(SBUF("nfo.c: Could not load target balance 2."), __LINE__);
+        // int64_t outstanding_tokens = slot_float(2); // <- amount as token
 
-        // SLOT SUBFIELD: sfBalance
-        if (slot_subfield(1, sfBalance, 2) != 20)
-            accept(SBUF("nfo.c: Could not load target balance 2.2."), __LINE__);
+        // int64_t percent = float_divide(final_bal, outstanding_tokens);
+        // if (percent > MAX_INVESTMENT)
+        // {
+        //     NOPE("nfo.c: Max investment reached: 25 Percent.");
+        // }
 
-        int64_t outstanding_tokens = slot_float(2); // <- amount as token
+        // // ACCOUNT: Update DEST ACCT
+        // otxn_field(BUY_DEST_ACC, SFS_ACCOUNT, sfAccount);
 
-        int64_t percent = float_divide(final_bal, outstanding_tokens);
-        if (percent > MAX_INVESTMENT)
-        {
-            NOPE("nfo.c: Max investment reached: 25 Percent.");
-        }
+        // // ACCOUNT: Update SRC ACCT
+        // hook_account(BUY_SRC_ACC, 20);
 
         float_sto(
             AMOUNT_OUT,
@@ -307,8 +303,7 @@ int64_t hook(uint32_t reserved)
         *b++ = (fee >> 0) & 0xFFU;
     }
 
-    if (DEBUG)
-        trace(SBUF("txnraw"), SBUF(txn), 1);
+    TRACEHEX(txn);
 
     // TXN: Emit/Send Txn
     uint8_t emithash[32];

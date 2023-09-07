@@ -205,9 +205,16 @@ int64_t hook(uint32_t r)
     uint8_t hook_accid[32];
     hook_account(hook_accid + 12, 20);
 
+    // PARAMATER: Txn Parameter - Net Asset Value
+    uint8_t nav[8];
+    uint8_t nav_key[4] = {'N', 'A', 'V'};
+    if (otxn_param(nav, 8, nav_key, 3) == 8)
+    {
+        DONE("3mm.c: Skipping nav update.");
+    }
+
     int64_t member_count = state(0, 0, "MC", 2);
-    if (DEBUG)
-        TRACEVAR(member_count);
+    TRACEVAR(member_count);
 
     // initial execution, setup hook
     if (BUFFER_EQUAL_20(hook_accid + 12, otxn_accid + 12) && member_count == DOESNT_EXIST)
