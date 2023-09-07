@@ -11,7 +11,9 @@
     "url": "https://github.com/dangell7"
   },
   "license": "GPL-3.0-or-later",
-  "dependencies": {},
+  "dependencies": {
+    "@transia/hooks-toolkit": "^1.0.5"
+  },
   "devDependencies": {
     "@tsconfig/node16": "^1.0.3",
     "ts-node": "^10.9.1",
