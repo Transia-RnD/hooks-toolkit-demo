@@ -9,6 +9,7 @@ import {
   ExecutionUtility,
   StateUtility,
   floatToLEXfl,
+  flipHex,
 } from '@transia/hooks-toolkit'
 // NOT EXPORTED
 import {
@@ -34,11 +35,14 @@ import {
   convertStringToHex,
 } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
-import { AccountID } from '@transia/ripple-binary-codec/dist/types'
+import { AccountID, UInt64 } from '@transia/ripple-binary-codec/dist/types'
 import { sign } from '@transia/ripple-keypairs'
 import { hashURIToken } from '@transia/xrpl/dist/npm/utils/hashes'
 import { ProposalModelV2 } from './models/ProposalModelV2'
-import { decodeModel } from '@transia/hooks-toolkit/dist/npm/src/libs/binary-models'
+import {
+  decodeModel,
+  hexToXfl,
+} from '@transia/hooks-toolkit/dist/npm/src/libs/binary-models'
 
 export async function setHooks(): Promise<void> {
   const testContext = (await setupClient(
@@ -155,6 +159,13 @@ export async function setNAV(): Promise<void> {
     wallet: fmWallet,
     tx: builtTx,
   })
+  const state = (await StateUtility.getHookStateDir(
+    testContext.client,
+    hookWallet.classicAddress,
+    'nfo'
+  )) as any[]
+  console.log(state)
+  console.log(hexToXfl(state[0].HookStateData))
   await testContext.client.disconnect()
 }
 
@@ -230,6 +241,12 @@ export async function setUp3mm(): Promise<void> {
     result.meta as TransactionMetadata
   )
   console.log(hookExecutions.executions[0].HookReturnString)
+  const state = await StateUtility.getHookStateDir(
+    testContext.client,
+    hookWallet.classicAddress,
+    'nfo'
+  )
+  console.log(state)
   await close(testContext.client)
   await testContext.client.disconnect()
 }
@@ -278,11 +295,15 @@ export async function buyURIToken(): Promise<void> {
     12, // expiration
     0, // 0 buy 1 sell 2 cancel
     1, // quantity
-    100, // price
+    10, // price
     'USD', // currency
     gwWallet.classicAddress, // address
     uriTokenID // hash id
   )
+  console.log(decodeModel(proposalModelV2.encode(), ProposalModelV2))
+  console.log(proposalModelV2.encode())
+  console.log(proposalModelV2.encode().length / 2)
+  console.log(proposalModelV2.encode().padStart(128, '0'))
   const tx4Param1 = new iHookParamEntry(
     new iHookParamName('T'),
     new iHookParamValue('55' + '01', true) // U - 01 (proposal #)
@@ -315,17 +336,17 @@ export async function buyURIToken(): Promise<void> {
     hookWallet.classicAddress,
     'nfo'
   )
+  console.log(state)
+
   await testContext.client.disconnect()
 }
 
 export async function main(): Promise<void> {
-  console.log('HELLO WORLD')
-
-  // await setHooks()
-  // await setNAV()
-  // await buyNFO()
-  // await setUp3mm()
-  // await buyURIToken()
+  await setHooks()
+  await setNAV()
+  await buyNFO()
+  await setUp3mm()
+  await buyURIToken()
 }
 
 main()

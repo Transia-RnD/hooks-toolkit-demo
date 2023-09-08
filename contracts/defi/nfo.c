@@ -54,7 +54,7 @@ Trading Window?: YES - 16 hours
 Price Determination: 24 hours - Net Asset Value
 Risk Profile: LRLR - Low Risk - Low Reward (98/2) (Stable Coins)
 Min Investors: 20 (Must be reached to start investment purchasing)
-Max Investment: 25% per account
+Max Investment: 25% of outstanding
 Redemption Fee: 0.5% (0.05% - 2%)
 Redemption Period: 30 days (30 to 180)
 Closed NFO: 1 (cannot purchase after end of nfo period)
