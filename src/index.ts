@@ -9,19 +9,13 @@ import {
   ExecutionUtility,
   StateUtility,
   floatToLEXfl,
-  flipHex,
 } from '@transia/hooks-toolkit'
 // NOT EXPORTED
 import {
-  ICXRP,
   XrplIntegrationTestContext,
-  accountSet,
-  balance,
   close,
-  fund,
   serverUrl,
   setupClient,
-  trust,
 } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
 import {
   URITokenMint,
@@ -29,13 +23,12 @@ import {
   Payment,
   TrustSet,
   Invoke,
-  AccountSetAsfFlags,
   SetHookFlags,
   TransactionMetadata,
   convertStringToHex,
 } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
-import { AccountID, UInt64 } from '@transia/ripple-binary-codec/dist/types'
+import { AccountID } from '@transia/ripple-binary-codec/dist/types'
 import { sign } from '@transia/ripple-keypairs'
 import { hashURIToken } from '@transia/xrpl/dist/npm/utils/hashes'
 import { ProposalModelV2 } from './models/ProposalModelV2'
@@ -43,6 +36,7 @@ import {
   decodeModel,
   hexToXfl,
 } from '@transia/hooks-toolkit/dist/npm/src/libs/binary-models'
+import { ICModel } from './models/ICModel'
 
 export async function setHooks(): Promise<void> {
   const testContext = (await setupClient(
@@ -50,23 +44,7 @@ export async function setHooks(): Promise<void> {
   )) as XrplIntegrationTestContext
 
   const hookWallet = testContext.alice
-  // const hookWallet = Wallet.fromSeed('sEdTh61ofhxDV8e5higjZygFVtiibBw')
   const fmWallet = testContext.bob
-
-  // if ((await balance(testContext.client, hookWallet.classicAddress)) < 5000) {
-  //   await fund(
-  //     testContext.client,
-  //     testContext.master,
-  //     new ICXRP(10000),
-  //     ...[hookWallet.classicAddress]
-  //   )
-  // }
-
-  // await accountSet(
-  //   testContext.client,
-  //   hookWallet,
-  //   AccountSetAsfFlags.asfRequireAuth
-  // )
 
   const txAmount1: IssuedCurrencyAmount = {
     value: '100000000',
@@ -343,10 +321,25 @@ export async function buyURIToken(): Promise<void> {
 
 export async function main(): Promise<void> {
   await setHooks()
-  await setNAV()
-  await buyNFO()
-  await setUp3mm()
-  await buyURIToken()
+  // await setNAV()
+  // await buyNFO()
+  // await setUp3mm()
+  // await buyURIToken()
 }
 
-main()
+// main()
+
+export async function examples(): Promise<void> {
+  const icModel = new ICModel(
+    10, // price
+    'USD', // currency
+    'rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn' // address
+  )
+  console.log(icModel)
+  const encoded = icModel.encode()
+  console.log(encoded)
+  const decodedModel = decodeModel(encoded, ICModel)
+  console.log(decodedModel)
+}
+
+examples()
