@@ -4,8 +4,7 @@
   "description": "A demo repository for the hooks-toolkit.",
   "scripts": {
     "build:hooks": "c2wasm-cli contracts build",
-    "build:dev": "c2wasm-cli contracts build && ts-node src/index.ts",
-    "dev": "ts-node src/index.ts"
+    "dev": "c2wasm-cli contracts build && ts-node src/index.ts"
   },
   "author": {
     "name": "Denis Angell",

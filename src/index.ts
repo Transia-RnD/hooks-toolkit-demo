@@ -7,29 +7,38 @@ import {
   setHooksV3,
   SetHookParams,
   ExecutionUtility,
-  clearAllHooksV3,
+  StateUtility,
   floatToLEXfl,
 } from '@transia/hooks-toolkit'
 // NOT EXPORTED
 import {
+  ICXRP,
   XrplIntegrationTestContext,
   accountSet,
+  balance,
   close,
+  fund,
   serverUrl,
   setupClient,
   trust,
 } from '@transia/hooks-toolkit/dist/npm/src/libs/xrpl-helpers'
 import {
+  URITokenMint,
+  URITokenCreateSellOffer,
   Payment,
   TrustSet,
   Invoke,
   AccountSetAsfFlags,
   SetHookFlags,
   TransactionMetadata,
+  convertStringToHex,
 } from '@transia/xrpl'
 import { IssuedCurrencyAmount } from '@transia/xrpl/dist/npm/models/common'
 import { AccountID } from '@transia/ripple-binary-codec/dist/types'
 import { sign } from '@transia/ripple-keypairs'
+import { hashURIToken } from '@transia/xrpl/dist/npm/utils/hashes'
+import { ProposalModelV2 } from './models/ProposalModelV2'
+import { decodeModel } from '@transia/hooks-toolkit/dist/npm/src/libs/binary-models'
 
 export async function setHooks(): Promise<void> {
   const testContext = (await setupClient(
@@ -37,7 +46,23 @@ export async function setHooks(): Promise<void> {
   )) as XrplIntegrationTestContext
 
   const hookWallet = testContext.alice
+  // const hookWallet = Wallet.fromSeed('sEdTh61ofhxDV8e5higjZygFVtiibBw')
   const fmWallet = testContext.bob
+
+  // if ((await balance(testContext.client, hookWallet.classicAddress)) < 5000) {
+  //   await fund(
+  //     testContext.client,
+  //     testContext.master,
+  //     new ICXRP(10000),
+  //     ...[hookWallet.classicAddress]
+  //   )
+  // }
+
+  // await accountSet(
+  //   testContext.client,
+  //   hookWallet,
+  //   AccountSetAsfFlags.asfRequireAuth
+  // )
 
   const txAmount1: IssuedCurrencyAmount = {
     value: '100000000',
@@ -54,43 +79,43 @@ export async function setHooks(): Promise<void> {
     tx: builtTx1,
   })
 
-  // SET HOOK IN - NAV
-  const hook1Param1 = new iHookParamEntry(
-    new iHookParamName('PK'),
-    new iHookParamValue(fmWallet.publicKey, true)
-  )
-  const hook1 = createHookPayload(
-    0,
-    'nav',
-    'nfo',
-    SetHookFlags.hsfOverride,
-    ['Invoke'],
-    [hook1Param1.toXrpl()]
-  )
-
-  // SET HOOK IN - NFO
-  const hook2 = createHookPayload(0, 'nfo', 'nfo', SetHookFlags.hsfOverride, [
-    'Payment',
-  ])
-
   // SET HOOK IN - 3MM
-  const hookAcctHex = AccountID.from(hookWallet.classicAddress).toHex()
-  const hook3Param1 = new iHookParamEntry(
+  const fmAcctHex = AccountID.from(fmWallet.classicAddress).toHex()
+  const hook1Param1 = new iHookParamEntry(
     new iHookParamName('IMC'),
     new iHookParamValue('01', true)
   )
-  const hook3Param2 = new iHookParamEntry(
+  const hook1Param2 = new iHookParamEntry(
     new iHookParamName('495300', true), // IS
-    new iHookParamValue(hookAcctHex, true)
+    new iHookParamValue(fmAcctHex, true)
   )
-  const hook3 = createHookPayload(
+  const hook1 = createHookPayload(
     0,
     '3mm',
     'nfo',
     SetHookFlags.hsfOverride,
     ['Invoke'],
-    [hook3Param1.toXrpl(), hook3Param2.toXrpl()]
+    [hook1Param1.toXrpl(), hook1Param2.toXrpl()]
   )
+
+  // SET HOOK IN - NAV
+  const hook2Param1 = new iHookParamEntry(
+    new iHookParamName('PK'),
+    new iHookParamValue(fmWallet.publicKey, true)
+  )
+  const hook2 = createHookPayload(
+    0,
+    'nav',
+    'nfo',
+    SetHookFlags.hsfOverride,
+    ['Invoke'],
+    [hook2Param1.toXrpl()]
+  )
+
+  // SET HOOK IN - NFO
+  const hook3 = createHookPayload(0, 'nfo', 'nfo', SetHookFlags.hsfOverride, [
+    'Payment',
+  ])
 
   await setHooksV3({
     client: testContext.client,
@@ -110,7 +135,7 @@ export async function setNAV(): Promise<void> {
   const fmWallet = testContext.bob
 
   // INVOKE IN
-  const nav = String(100)
+  const nav = String(1)
   const tx1Param1 = new iHookParamEntry(
     new iHookParamName('NAV'),
     new iHookParamValue(floatToLEXfl(nav), true)
@@ -183,20 +208,124 @@ export async function buyNFO(): Promise<void> {
   await testContext.client.disconnect()
 }
 
+export async function setUp3mm(): Promise<void> {
+  const testContext = (await setupClient(
+    serverUrl
+  )) as XrplIntegrationTestContext
+
+  const hookWallet = testContext.alice
+  // const fmWallet = testContext.bob
+
+  // INVOKE OUT
+  const builtTx: Invoke = {
+    TransactionType: 'Invoke',
+    Account: hookWallet.classicAddress,
+  }
+  const result = await Xrpld.submit(testContext.client, {
+    wallet: hookWallet,
+    tx: builtTx,
+  })
+  const hookExecutions = await ExecutionUtility.getHookExecutionsFromMeta(
+    testContext.client,
+    result.meta as TransactionMetadata
+  )
+  console.log(hookExecutions.executions[0].HookReturnString)
+  await close(testContext.client)
+  await testContext.client.disconnect()
+}
+
+export async function buyURIToken(): Promise<void> {
+  const testContext = (await setupClient(
+    serverUrl
+  )) as XrplIntegrationTestContext
+
+  const gwWallet = testContext.gw
+  const hookWallet = testContext.alice
+  const fmWallet = testContext.bob
+
+  // URITOKEN_MINT && URITOKEN_CREATE_SELL_OFFER IN
+  const uri = `ipfs://${Math.random()}`
+  const builtTx2: URITokenMint = {
+    TransactionType: 'URITokenMint',
+    Account: gwWallet.classicAddress,
+    URI: convertStringToHex(uri),
+  }
+  await Xrpld.submit(testContext.client, {
+    wallet: gwWallet,
+    tx: builtTx2,
+  })
+  await close(testContext.client)
+  const uriTokenID = hashURIToken(gwWallet.classicAddress, uri)
+  const tx3Amount: IssuedCurrencyAmount = {
+    value: '10',
+    currency: 'USD',
+    issuer: testContext.gw.classicAddress,
+  }
+  const builtTx3: URITokenCreateSellOffer = {
+    TransactionType: 'URITokenCreateSellOffer',
+    Account: gwWallet.classicAddress,
+    Amount: tx3Amount,
+    URITokenID: uriTokenID,
+  }
+  await Xrpld.submit(testContext.client, {
+    wallet: gwWallet,
+    tx: builtTx3,
+  })
+
+  // INVOKE IN
+  const proposalModelV2 = new ProposalModelV2(
+    0, // 0 open 1 closed
+    12, // expiration
+    0, // 0 buy 1 sell 2 cancel
+    1, // quantity
+    100, // price
+    'USD', // currency
+    gwWallet.classicAddress, // address
+    uriTokenID // hash id
+  )
+  const tx4Param1 = new iHookParamEntry(
+    new iHookParamName('T'),
+    new iHookParamValue('55' + '01', true) // U - 01 (proposal #)
+  )
+
+  const tx4Param2 = new iHookParamEntry(
+    new iHookParamName('V'),
+    new iHookParamValue(proposalModelV2.encode(), true)
+  )
+
+  const builtTx4: Invoke = {
+    TransactionType: 'Invoke',
+    Account: fmWallet.classicAddress,
+    Destination: hookWallet.classicAddress,
+    HookParameters: [tx4Param1.toXrpl(), tx4Param2.toXrpl()],
+  }
+  const result4 = await Xrpld.submit(testContext.client, {
+    wallet: fmWallet,
+    tx: builtTx4,
+  })
+  const tx4Executions = await ExecutionUtility.getHookExecutionsFromMeta(
+    testContext.client,
+    result4.meta as TransactionMetadata
+  )
+  console.log(tx4Executions.executions[0].HookReturnString)
+
+  await close(testContext.client)
+  const state = await StateUtility.getHookStateDir(
+    testContext.client,
+    hookWallet.classicAddress,
+    'nfo'
+  )
+  await testContext.client.disconnect()
+}
+
 export async function main(): Promise<void> {
-  await setHooks()
-  await setNAV()
-  await buyNFO()
+  console.log('HELLO WORLD')
+
+  // await setHooks()
+  // await setNAV()
+  // await buyNFO()
+  // await setUp3mm()
+  // await buyURIToken()
 }
 
 main()
-// .finally(async () => {
-//   const testContext = (await setupClient(
-//     serverUrl
-//   )) as XrplIntegrationTestContext
-//   await clearAllHooksV3({
-//     client: testContext.client,
-//     seed: testContext.alice.seed,
-//   } as SetHookParams)
-//   await testContext.client.disconnect()
-// })

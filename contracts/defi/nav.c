@@ -39,14 +39,14 @@ int64_t hook(uint32_t reserved) {
 
     // FILTER ON: ACCOUNT
     if (BUFFER_EQUAL_20(hook_acc, otxn_acc))
-        rollback(SBUF("nav.c: outgoing tx on `Account`."), __LINE__);
+        DONE("nav.c: outgoing tx on `Account`.");
 
     // PARAMATER: Hook Parameter - Public Key
     uint8_t pk[33];
     uint8_t pk_key[2] = {'P', 'K'};
     if (hook_param(pk, 33, SBUF(pk_key)) != 33)
     {
-        rollback(SBUF("nav.c: invalid hook parameter `PK`."), __LINE__);
+        DONE("nav.c: invalid hook parameter `PK`.");
     }
     
     // PARAMATER: Txn Parameter - Net Asset Value
@@ -54,7 +54,7 @@ int64_t hook(uint32_t reserved) {
     uint8_t nav_key[4] = {'N', 'A', 'V'};
     if (otxn_param(nav, 8, nav_key, 3) != 8)
     {
-        rollback(SBUF("nav.c: invalid otxn parameter `NAV`."), __LINE__);
+        DONE("nav.c: invalid otxn parameter `NAV`.");
     }
 
     // PARAMATER: Txn Parameter - Signature

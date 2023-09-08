@@ -48,7 +48,7 @@
 "NFO"
 New Funding Opportunity
 
-Hook Account: GlobalFreeze
+Hook Account: Authorized Trustlines
 
 Trading Window?: YES - 16 hours
 Price Determination: 24 hours - Net Asset Value

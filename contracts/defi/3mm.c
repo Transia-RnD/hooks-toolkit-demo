@@ -85,11 +85,11 @@
 "3MM"
 3rd Party Money Manager
 
-Offer Transactions: 
+Offer Transactions:
 - OfferCreate
 - OfferCancel
 
-URIToken Transactions: 
+URIToken Transactions:
 - URITokenCreateSellOffer
 - URITokenCancelSellOffer
 - URITokenBuy
@@ -136,7 +136,7 @@ uint8_t o_txn[310] =
 uint8_t u_txn[295] =
 {
     /* size,upto */
-    /*   3,  0  */ 0x12U, 0x00U, 0x30U,                                                             /* tt = URITokenCreateSellOffer */
+    /*   3,  0  */ 0x12U, 0x00U, 0x2FU,                                                             /* tt = URITokenBuy */
     /*   5,  3  */ 0x22U, 0x80U, 0x00U, 0x00U, 0x00U,                                               /* flags = tfCanonical */
     /*   5,  8  */ 0x24U, 0x00U, 0x00U, 0x00U, 0x00U,                                               /* sequence = 0 */
     /*   5, 13  */ 0x99U, 0x99U, 0x99U, 0x99U, 0x99U,                                               /* dtag, flipped */
